@@ -2,13 +2,15 @@ package com.apolis.servicedemo
 
 import android.app.Service
 import android.content.Intent
+import android.media.MediaMetadata
 import android.media.MediaPlayer
+import android.os.Binder
 import android.os.IBinder
 
 class MusicService : Service() {
-
+    var isMediaPlayerReady = false
     var musicControlCmd = ""
-
+    lateinit var musicBinder: MusicBinder
     lateinit var mediaPlayer: MediaPlayer
 
     override fun onCreate() {
@@ -17,26 +19,17 @@ class MusicService : Service() {
     }
 
     override fun onBind(intent: Intent): IBinder? {
-        return null
+
+        if(this::musicBinder.isInitialized) {
+            return musicBinder
+        }
+        musicBinder = MusicBinder()
+        return musicBinder
+
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        musicControlCmd = intent?.extras?.getString("cmd")?:""
 
-        when(musicControlCmd) {
-            "start" -> {
-                startMusic()
-            }
-            "pause" -> {
-                pauseMusic()
-            }
-            "play" -> {
-                playMusic()
-            }
-            "stop" -> {
-                stopMusic()
-            }
-        }
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -67,6 +60,7 @@ class MusicService : Service() {
 
         mediaPlayer.setOnPreparedListener {
             it.start()
+            isMediaPlayerReady = true
         }
 
         mediaPlayer.prepareAsync()
@@ -76,5 +70,45 @@ class MusicService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+    }
+
+    inner class MusicBinder: Binder() {
+
+        fun play() {
+            playMusic()
+        }
+
+        fun stop() {
+            stopMusic()
+        }
+
+        fun start() {
+            startMusic()
+        }
+
+        fun pause() {
+            pauseMusic()
+        }
+
+        fun getTotalTime(): Int {
+
+            if(isMediaPlayerReady) {
+                return mediaPlayer.duration
+            }
+
+            return -1
+        }
+
+        fun getCurrentSeekPosition(): Int {
+            if(isMediaPlayerReady) {
+                return mediaPlayer.currentPosition
+            }
+            return -1
+        }
+
+        fun setCurrentSeekPosition(newPosition: Int) {
+            mediaPlayer.seekTo(newPosition)
+        }
+
     }
 }
