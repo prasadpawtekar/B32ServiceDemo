@@ -3,6 +3,7 @@ package com.apolis.servicedemo
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
@@ -31,7 +32,15 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnStartMusic.setOnClickListener {
             val sIntent = Intent(baseContext, MusicService::class.java)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(sIntent)
+            } else {
+                startService(sIntent)
+            }
+
             bindService(sIntent, serviceConnection, BIND_AUTO_CREATE)
+
         }
 
         binding.btnPause.setOnClickListener {
