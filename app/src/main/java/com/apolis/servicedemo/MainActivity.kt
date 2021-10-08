@@ -1,6 +1,8 @@
 package com.apolis.servicedemo
 
+import android.app.ActivityManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Build
@@ -24,7 +26,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        val sIntent = Intent(baseContext, MusicService::class.java)
+        if (isServiceRunning(MusicService::class.java)) {
+            isPlayerStopped = false
+            bindService(sIntent, serviceConnection, BIND_AUTO_CREATE)
+        }
         setupEvents()
     }
 
@@ -33,14 +39,17 @@ class MainActivity : AppCompatActivity() {
         binding.btnStartMusic.setOnClickListener {
             val sIntent = Intent(baseContext, MusicService::class.java)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(sIntent)
+            if (isServiceRunning(MusicService::class.java)) {
+                bindService(sIntent, serviceConnection, BIND_AUTO_CREATE)
             } else {
-                startService(sIntent)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(sIntent)
+                } else {
+                    startService(sIntent)
+                }
+
+                bindService(sIntent, serviceConnection, BIND_AUTO_CREATE)
             }
-
-            bindService(sIntent, serviceConnection, BIND_AUTO_CREATE)
-
         }
 
         binding.btnPause.setOnClickListener {
@@ -92,7 +101,9 @@ class MainActivity : AppCompatActivity() {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             musicBinder = binder as MusicService.MusicBinder
             Log.d("ServiceDemo", "onServiceConnected: ")
-            musicBinder.start()
+            if(isPlayerStopped) {
+                musicBinder.start()
+            }
             isPlayerStopped = false
             setupSeekPositionListener()
 
@@ -123,5 +134,11 @@ class MainActivity : AppCompatActivity() {
                 delay(1000)
             }
         }
+    }
+
+    fun isServiceRunning(serviceClass: Class<*>): Boolean {
+        val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        return manager.getRunningServices(Integer.MAX_VALUE)
+            .any { it.service.className == serviceClass.name }
     }
 }

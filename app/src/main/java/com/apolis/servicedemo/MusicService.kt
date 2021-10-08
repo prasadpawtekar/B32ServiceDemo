@@ -35,15 +35,15 @@ class MusicService : Service() {
 
         val playIntent = Intent(baseContext, MusicService::class.java)
         playIntent.putExtra("cmd", "play")
-        val piPlay = PendingIntent.getService(this, id, playIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val piPlay = PendingIntent.getService(this, Random.nextInt(50000), playIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
         val pauseIntent = Intent(baseContext, MusicService::class.java)
         pauseIntent.putExtra("cmd", "pause")
-        val piPause = PendingIntent.getService(this, id, pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val piPause = PendingIntent.getService(this, Random.nextInt(50000), pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
         val stopIntent = Intent(baseContext, MusicService::class.java)
         stopIntent.putExtra("cmd", "stop")
-        val piStop = PendingIntent.getService(this, id, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val piStop = PendingIntent.getService(this, Random.nextInt(50000), stopIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
         val contentIntent = Intent(baseContext, MainActivity::class.java)
         val piActivity = PendingIntent.getActivity(baseContext, id, contentIntent, PendingIntent.FLAG_UPDATE_CURRENT)
@@ -99,13 +99,20 @@ class MusicService : Service() {
                 stopMusic()
             }
         }
-        return super.onStartCommand(intent, flags, startId)
+        return START_STICKY
     }
 
     private fun stopMusic() {
 
         mediaPlayer.stop()
         mediaPlayer.release()
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            stopForeground(true)
+            stopSelf()
+        } else {
+            stopSelf()
+        }
 
     }
 
